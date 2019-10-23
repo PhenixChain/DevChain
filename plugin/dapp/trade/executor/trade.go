@@ -1,0 +1,165 @@
+// Copyright Fuzamei Corp. 2018 All Rights Reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package executor
+
+/*
+trade执行器支持trade的创建和交易，
+
+主要提供操作有以下几种：
+1）挂单出售；
+2）购买指定的卖单；
+3）撤销卖单；
+4）挂单购买；
+5）出售指定的买单；
+6）撤销买单；
+*/
+
+import (
+	log "github.com/PhenixChain/devchain/common/log/log15"
+
+	"github.com/PhenixChain/devchain/common/db/table"
+	drivers "github.com/PhenixChain/devchain/system/dapp"
+	"github.com/PhenixChain/devchain/types"
+	pty "github.com/PhenixChain/devchain/plugin/dapp/trade/types"
+)
+
+var (
+	tradelog         = log.New("module", "execs.trade")
+	defaultAssetExec = "token"
+	driverName       = "trade"
+	defaultPriceExec = "coins"
+)
+
+func init() {
+	ety := types.LoadExecutorType(driverName)
+	ety.InitFuncList(types.ListMethod(&trade{}))
+}
+
+// Init : 注册当前trade合约
+func Init(name string, sub []byte) {
+	drivers.Register(GetName(), newTrade, types.GetDappFork(driverName, "Enable"))
+}
+
+// GetName : 获取trade合约名字
+func GetName() string {
+	return newTrade().GetName()
+}
+
+type trade struct {
+	drivers.DriverBase
+}
+
+func newTrade() drivers.Driver {
+	t := &trade{}
+	t.SetChild(t)
+	t.SetExecutorType(types.LoadExecutorType(driverName))
+	return t
+}
+
+func (t *trade) GetDriverName() string {
+	return driverName
+}
+
+func (t *trade) getSellOrderFromDb(sellID []byte) *pty.SellOrder {
+	value, err := t.GetStateDB().Get(sellID)
+	if err != nil {
+		panic(err)
+	}
+	var sellorder pty.SellOrder
+	types.Decode(value, &sellorder)
+	return &sellorder
+}
+
+func (t *trade) saveSell(base *pty.ReceiptSellBase, ty int32, tx *types.Transaction, txIndex string, ldb *table.Table) []*types.KeyValue {
+	sellorder := t.getSellOrderFromDb([]byte(base.SellID))
+
+	if ty == pty.TyLogTradeSellLimit && sellorder.SoldBoardlot == 0 {
+		newOrder := t.genSellLimit(tx, base, sellorder, txIndex)
+		tradelog.Info("Table", "sell-add", newOrder)
+		ldb.Add(newOrder)
+	} else {
+		t.updateSellLimit(tx, base, sellorder, txIndex, ldb)
+	}
+	return genSaveSellKv(sellorder)
+}
+
+func (t *trade) deleteSell(base *pty.ReceiptSellBase, ty int32, tx *types.Transaction, txIndex string, ldb *table.Table, tradedBoardlot int64) []*types.KeyValue {
+	sellorder := t.getSellOrderFromDb([]byte(base.SellID))
+	if ty == pty.TyLogTradeSellLimit && sellorder.SoldBoardlot == 0 {
+		ldb.Del([]byte(txIndex))
+	} else {
+		t.rollBackSellLimit(tx, base, sellorder, txIndex, ldb, tradedBoardlot)
+	}
+	return genDeleteSellKv(sellorder)
+}
+
+func (t *trade) saveBuy(receiptTradeBuy *pty.ReceiptBuyBase, tx *types.Transaction, txIndex string, ldb *table.Table) []*types.KeyValue {
+	//tradelog.Info("save", "buy", receiptTradeBuy)
+
+	var kv []*types.KeyValue
+	order := t.genBuyMarket(tx, receiptTradeBuy, txIndex)
+	tradelog.Debug("trade BuyMarket save local", "order", order)
+	ldb.Add(order)
+	return saveBuyMarketOrderKeyValue(kv, receiptTradeBuy, pty.TradeOrderStatusBoughtOut, t.GetHeight())
+}
+
+func (t *trade) deleteBuy(receiptTradeBuy *pty.ReceiptBuyBase, txIndex string, ldb *table.Table) []*types.KeyValue {
+	var kv []*types.KeyValue
+	ldb.Del([]byte(txIndex))
+	return deleteBuyMarketOrderKeyValue(kv, receiptTradeBuy, pty.TradeOrderStatusBoughtOut, t.GetHeight())
+}
+
+// BuyLimit Local
+func (t *trade) getBuyOrderFromDb(buyID []byte) *pty.BuyLimitOrder {
+	value, err := t.GetStateDB().Get(buyID)
+	if err != nil {
+		panic(err)
+	}
+	var buyOrder pty.BuyLimitOrder
+	types.Decode(value, &buyOrder)
+	return &buyOrder
+}
+
+func (t *trade) saveBuyLimit(buy *pty.ReceiptBuyBase, ty int32, tx *types.Transaction, txIndex string, ldb *table.Table) []*types.KeyValue {
+	buyOrder := t.getBuyOrderFromDb([]byte(buy.BuyID))
+	tradelog.Debug("Table", "buy-add", buyOrder)
+	if buyOrder.Status == pty.TradeOrderStatusOnBuy && buy.BoughtBoardlot == 0 {
+		order := t.genBuyLimit(tx, buy, txIndex)
+		tradelog.Info("Table", "buy-add", order)
+		ldb.Add(order)
+	} else {
+		t.updateBuyLimit(tx, buy, buyOrder, txIndex, ldb)
+	}
+
+	return genSaveBuyLimitKv(buyOrder)
+}
+
+func (t *trade) deleteBuyLimit(buy *pty.ReceiptBuyBase, ty int32, tx *types.Transaction, txIndex string, ldb *table.Table, traded int64) []*types.KeyValue {
+	buyOrder := t.getBuyOrderFromDb([]byte(buy.BuyID))
+	if ty == pty.TyLogTradeBuyLimit && buy.BoughtBoardlot == 0 {
+		ldb.Del([]byte(txIndex))
+	} else {
+		t.rollbackBuyLimit(tx, buy, buyOrder, txIndex, ldb, traded)
+	}
+	return genDeleteBuyLimitKv(buyOrder)
+}
+
+func (t *trade) saveSellMarket(receiptTradeBuy *pty.ReceiptSellBase, tx *types.Transaction, txIndex string, ldb *table.Table) []*types.KeyValue {
+	var kv []*types.KeyValue
+	order := t.genSellMarket(tx, receiptTradeBuy, txIndex)
+	ldb.Add(order)
+	return saveSellMarketOrderKeyValue(kv, receiptTradeBuy, pty.TradeOrderStatusSoldOut, t.GetHeight())
+}
+
+func (t *trade) deleteSellMarket(receiptTradeBuy *pty.ReceiptSellBase, txIndex string, ldb *table.Table) []*types.KeyValue {
+	var kv []*types.KeyValue
+	ldb.Del([]byte(txIndex))
+	return deleteSellMarketOrderKeyValue(kv, receiptTradeBuy, pty.TradeOrderStatusSoldOut, t.GetHeight())
+}
+
+// CheckReceiptExecOk return true to check if receipt ty is ok
+func (t *trade) CheckReceiptExecOk() bool {
+	return true
+}

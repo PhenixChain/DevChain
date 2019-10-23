@@ -1,0 +1,9 @@
+version: '3'
+services:
+  DevServer:
+    image: "dev-server:latest"
+    container_name: DevServer
+    volumes:
+      - ../data:/myApp/data
+    network_mode: "host"
+    restart: always

@@ -1,0 +1,9 @@
+*.log
+*.exe
+*.bak
+.DS_Store
+.vscode
+go.sum
+cmd/server/server
+cmd/server/data
+cmd/cli/cli
