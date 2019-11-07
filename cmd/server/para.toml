@@ -61,7 +61,7 @@ grpcBindAddr=":8902"
 whitelist=["*"]
 jrpcFuncWhitelist=["*"]
 grpcFuncWhitelist=["*"]
-mainnetJrpcAddr= "http://192.168.0.213:8801"
+mainnetJrpcAddr= "http://127.0.0.1:8801"
 
 [mempool]
 name="para"
@@ -87,7 +87,7 @@ coinDevFund=3
 
 [consensus.sub.para]
 #此处IP改成实际的地址
-ParaRemoteGrpcClient = "192.168.0.213:8802"
+ParaRemoteGrpcClient = "127.0.0.1:8802"
 #指定从主链某高度的区块开始同步
 startHeight=7800
 #打包时间间隔，单位秒

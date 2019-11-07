@@ -26,5 +26,5 @@ import (
 	_ "github.com/PhenixChain/devchain/plugin/dapp/token"    //auto gen
 	_ "github.com/PhenixChain/devchain/plugin/dapp/trade"    //auto gen
 	_ "github.com/PhenixChain/devchain/plugin/dapp/unfreeze" //auto gen
-	_ "github.com/PhenixChain/devchain/plugin/dapp/valnode"  //auto gen
+	//_ "github.com/PhenixChain/devchain/plugin/dapp/valnode"  //auto gen
 )
