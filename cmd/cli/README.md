@@ -25,7 +25,7 @@
 
 ### 转账 
 ```
-./cli send coins transfer -a 100 -t <接收地址> -k <发送地址>
+./cli send coins transfer -a 100 -t <接收地址> -k <发送地址私钥>
 ```
 
 ### 查询

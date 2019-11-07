@@ -61,7 +61,7 @@ grpcBindAddr=":8902"
 whitelist=["*"]
 jrpcFuncWhitelist=["*"]
 grpcFuncWhitelist=["*"]
-mainnetJrpcAddr= "http://127.0.0.1:8801"
+mainnetJrpcAddr= "http://192.168.0.213:8801"
 
 [mempool]
 name="para"
@@ -87,9 +87,9 @@ coinDevFund=3
 
 [consensus.sub.para]
 #此处IP改成实际的地址
-ParaRemoteGrpcClient = "127.0.0.1:8802"
+ParaRemoteGrpcClient = "192.168.0.213:8802"
 #指定从主链某高度的区块开始同步
-startHeight=100
+startHeight=7800
 #打包时间间隔，单位秒
 writeBlockSeconds=5
 #创世地址额度
@@ -108,14 +108,6 @@ MainParaSelfConsensusForkHeight=-1
 [[consensus.sub.para.emptyBlockInterval]]
 blockHeight=0
 interval=50
-
-[consensus.sub.dpos]
-delegateNum=1
-blockInterval=2
-continueBlockNum=12
-blockNumToUpdateDelegate=200
-registTopNHeightLimit=10
-updateTopNHeightLimit=20
 
 [store]
 name="kvmvccmavl"
@@ -264,9 +256,6 @@ ForkBlackWhiteV2=0
 [fork.sub.cert]
 Enable=0
 
-[fork.sub.guess]
-Enable=0
-
 [fork.sub.lottery]
 Enable=0
 
@@ -279,13 +268,7 @@ Enable=0
 [fork.sub.norm]
 Enable=0
 
-[fork.sub.pokerbull]
-Enable=0
-
 [fork.sub.privacy]
-Enable=0
-
-[fork.sub.game]
 Enable=0
 
 [fork.sub.multisig]
@@ -304,6 +287,3 @@ Enable=0
 
 [fork.sub.store-kvmvccmavl]
 ForkKvmvccmavl=0
-
-[fork.sub.dpos]
-Enable=0
