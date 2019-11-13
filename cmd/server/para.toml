@@ -242,30 +242,7 @@ ForkParacrossWithdrawFromParachain=0
 ForkParacrossCommitTx=0
 ForkLoopCheckCommitTxDone=0
 
-[fork.sub.evm]
-Enable=0
-ForkEVMState=0
-ForkEVMABI=0
-ForkEVMFrozen=0
-ForkEVMKVHash=0
-
-[fork.sub.blackwhite]
-Enable=0
-ForkBlackWhiteV2=0
-
-[fork.sub.cert]
-Enable=0
-
-[fork.sub.lottery]
-Enable=0
-
-[fork.sub.oracle]
-Enable=0
-
 [fork.sub.relay]
-Enable=0
-
-[fork.sub.norm]
 Enable=0
 
 [fork.sub.privacy]
@@ -278,12 +255,6 @@ Enable=0
 Enable=0
 ForkTerminatePart=0
 ForkUnfreezeIDX= 0
-
-[fork.sub.autonomy]
-Enable=0
-
-[fork.sub.jsvm]
-Enable=0
 
 [fork.sub.store-kvmvccmavl]
 ForkKvmvccmavl=0
